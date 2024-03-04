@@ -1,0 +1,9 @@
+code/a.out: changed 100%
+code/helloworld.cpp: changed 16%
+code/output2.txt: changed 40%
+code/output3.txt: changed 60%
+code/output4.txt: changed 40%
+delete hello.txt
+create hi.txt
+delete link4
+run.sh: changed 21%

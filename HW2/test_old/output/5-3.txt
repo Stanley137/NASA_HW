@@ -1,0 +1,7 @@
+usage: ./compare.sh [OPTION] <PATH A> <PATH B>
+options:
+-a: compare hidden files instead of ignoring them
+-h: output information about compare.sh
+-l: treat symlinks as files instead of ignoring them
+-n <EXP>: compare only files whose paths follow the REGEX <EXP>
+-r: compare directories recursively

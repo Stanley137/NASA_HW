@@ -1,0 +1,5 @@
+a.out: changed 100%
+helloworld.cpp: changed 16%
+output2.txt: changed 40%
+output3.txt: changed 60%
+output4.txt: changed 40%

@@ -1,0 +1,8 @@
+.code.backup/output2.txt: changed 40%
+.code.backup/output3.txt: changed 60%
+.code.backup/output4.txt: changed 40%
+code/output2.txt: changed 40%
+code/output3.txt: changed 60%
+code/output4.txt: changed 40%
+delete hello.txt
+create hi.txt
