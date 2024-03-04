@@ -209,12 +209,6 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 			fi
 
 		elif [[ "$Check_File" = "File" ]]; then # which means one of them are directory
-			## process with -n <regex>
-			if [[ $n_regular -eq 1 ]]; then
-				if [[ ! "$file1" =~ "$exp_str" ]];then
-					continue
-				fi
-			fi
 			# deal with -l
 			if [[ $l_as_file -eq 1 ]]; then
 				file1=`echo "$line" | awk '{print $2}'`  # dir1/path
@@ -224,6 +218,12 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 					# file1=`echo $file1 | sed -e "s/${1}\///"`
 				file1=${file1#$1/} # path/
 				file2=${file2#$2/} # path/
+				## process with -n <regex>
+				if [[ $n_regular -eq 1 ]]; then
+					if [[ ! "$file1" =~ "$exp_str" ]];then
+						continue
+					fi
+				fi
 				# deal with unseen file
 				if [[ "$file1" =~ ^\..* || "$file1" =~ .*\/\..* ]] && [[ $a_all_file -eq 0 ]]; then
 					# check whether hidden directory
@@ -251,7 +251,11 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 						continue
 					fi
 				fi
-				echo "delete $file1"
+				rel_dir=${which_dir#$1}
+				rel_dir=${rel_dir%:}
+				rel_dir=${rel_dir:1}
+				# 	echo "$rel_dir"
+				echo "delete $rel_dir$file1"
 			elif [[ "$which_dir" = "$2:" ]]; then
 				file2=`echo "$line" | awk '{print $4}'`
 				# deal with unseen file
@@ -265,6 +269,10 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 						continue
 					fi
 				fi
+				rel_dir=${which_dir#$2}
+				rel_dir=${rel_dir%:}
+				rel_dir=${rel_dir:1}
+				# echo "$rel_dir"
 				echo "create $file2"
 			fi
 		fi
