@@ -43,7 +43,12 @@ done
 
 # remove the options
 shift $((OPTIND	 - 1))
-
+# echo "$1" 
+# echo "$2"
+p1=`echo "$1" | sed 's/\/\+/\//g'`
+p2=`echo "$2" | sed 's/\/\+/\//g'`
+# echo "$p1"
+# echo "$p2"
 # check whether has others token
 if [[ $# -ne 2 ]]; then
 	usage
@@ -51,41 +56,44 @@ fi
 # check -r 
 if [[ $r_recursive -eq 1 ]]; then
 	# The directory not exist
-	if [[ ! -d $1 ]] || [[ ! -d $2 ]]; then
+	if [[ ! -d $p1 ]] || [[ ! -d $p2 ]]; then
 		usage
 	fi
-fi
-if [[ $r_recursive -ne 1 ]]; then 
+elif [[ $r_recursive -ne 1 ]]; then 
 	# the paramater are not file
-	if [[ ! -e $1 ]] || [[ ! -e $2 ]]; then
+	if [[ -d $p1 ]] || [[ -d $p2 ]]; then
 		usage
 	fi
+	# exist or not
+	if [[ ! -e $p1 ]] || [[ ! -e $p2 ]]; then
+		usage
+	fi
+	# link or not
+	if [[ -h $p1 || -h $p2 ]] && [[ $l_as_file -ne 1 ]]; then
+		usage
+	fi 
 fi
 
-# link as file false
-if [[ $l_as_file -ne 1 ]]; then
-	# check if link or directory
-	if [[ -h $1 ]] || [[ -h $2 ]]; then
-		usage
-	fi
-	# check directory
-	if [[ $r_recursive -eq 1 ]]; then
-		if [[ ! -d $1 ]] || [[ ! -d $2 ]]; then
-			usage
-		fi
-	# check file
-	elif [[ $r_recursive -ne 1 ]]; then
-		if [[ ! -f $1 ]] || [[ ! -f $2 ]]; then
-			usage
-		fi
-	fi
-fi
-# link exist
-if [[ $l_as_file -eq 1 ]]; then
-	if [[ ! -e $1 ]] || [[ ! -e $2 ]]; then
-		usage
-	fi
-fi
+# # link as file false
+# if [[ $l_as_file -ne 1 ]]; then
+# 	# check directory
+# 	if [[ $r_recursive -eq 1 ]]; then
+# 		if [[ ! -d $p1 ]] || [[ ! -d $p2 ]]; then
+# 			usage
+# 		fi
+# 	# check file
+# 	elif [[ $r_recursive -ne 1 ]]; then
+# 		if [[ ! -f $p1 ]] || [[ ! -f $p2 ]]; then
+# 			usage
+# 		fi
+# 	fi
+# fi
+# # link exist
+# if [[ $l_as_file -eq 1 ]]; then
+# 	if [[ ! -e $p1 ]] || [[ ! -e $p2 ]]; then
+# 		usage
+# 	fi
+# fi
 
 # check -a and -n, -r
 # a,n must come with r
@@ -124,30 +132,30 @@ compare_files(){
 }
 
 # Compare file without -l
-if [[ ! -h $1 ]] && [[ ! -h $2 ]] && [[ $r_recursive -ne 1 ]]; then
-	compare_files "$1" "$2"
+if [[ ! -h $p1 ]] && [[ ! -h $p2 ]] && [[ $r_recursive -ne 1 ]] && [[ $l_as_file -ne 1 ]]; then
+	compare_files "$p1" "$p2"
 	exit 1
 fi
 
 # Compare file with -l
-if [[ $r_recursive -ne 1 ]]; then
-	if [[ -h $1 && -h $2 ]]; then
-		link1=`readlink $1`
-		link2=`readlink $2`
+if [[ $r_recursive -ne 1 ]] && [[ $l_as_file -eq 1 ]]; then
+	if [[ -h $p1 && -h $p2 ]]; then
+		link1=`readlink $p1`
+		link2=`readlink $p2`
 		if [[ "$link1" != "$link2" ]]; then
 			echo "changed 100%"
 		fi
-	elif [[ -h $1 && ! -h $2 ]] || [[ ! -h $1 && -h $2 ]];then
+	elif [[ -h $p1 && ! -h $p2 ]] || [[ ! -h $p1 && -h $p2 ]];then
 		echo "changed 100%"
 	else
-		compare_files "$1" "$2"
+		compare_files "$p1" "$p2"
 	fi
 	exit 1
 fi
 
 # -r, -l , -a operation
-if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
-	diff_result=`diff -rq $1 $2`
+if [[ -d $p1 ]] && [[ -d $p2 ]] && [[ $r_recursive -eq 1 ]]; then
+	diff_result=`diff -rq $p1 $p2`
 	# echo "$diff_result"
 	# echo "======="
 	while IFS="" read -r line; do
@@ -158,8 +166,8 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 			# echo "$file1"
 			# echo "$file2"	
 			# file1=`echo $file1 | sed -e "s/${1}\///"`
-			file1=${file1#$1/} # path/
-			file2=${file2#$2/} # path/
+			file1=${file1#$p1/} # path/
+			file2=${file2#$p2/} # path/
 
 			# deal with unseen file
 			if [[ "$file1" =~ ^\..* || "$file1" =~ .*\/\..* ]] && [[ $a_all_file -eq 0 ]]; then
@@ -175,9 +183,9 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 			# link as file or not
 			if [[ $l_as_file -eq 1 ]]; then
 				## all all links
-				if [[ -L $1/$file1 && -L $2/$file2 ]]; then
-					link1=`readlink $1/$file1`
-					link2=`readlink $2/$file2`
+				if [[ -L $p1/$file1 && -L $p2/$file2 ]]; then
+					link1=`readlink $p1/$file1`
+					link2=`readlink $p2/$file2`
 					# deal with link content
 					if [[ "$link1" != "$link2" ]]; then
 						echo "$file1: changed 100%"
@@ -185,23 +193,23 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 					continue
 				fi
 				## one is link
-				if [[ -f $1/$file1 && -L $2/$file2 ]] || [[ -L $1/$file1 && -f $2/$file2 ]]; then
+				if [[ -f $p1/$file1 && -L $p2/$file2 ]] || [[ -L $p1/$file1 && -f $p2/$file2 ]]; then
 					echo "$file1: changed 100%"
 					continue
 				fi
 			else
 				# deal with link
-				if [[ -h $1/$file1 ]]; then
+				if [[ -h $p1/$file1 ]]; then
 					continue
 				fi
 				# deal with file and link
-				if [[ -f $1/$file1 && -h $2/$file2 ]]; then
+				if [[ -f $p1/$file1 && -h $p2/$file2 ]]; then
 					echo "delete $file1"
 					continue
 				fi
 			fi
 
-			cmp_result=`compare_files $1/$file1 $2/$file2`
+			cmp_result=`compare_files $p1/$file1 $p2/$file2`
 			if [[ "$cmp_result" != "changed 100%" ]]; then
 				echo "$file1: $cmp_result"
 			else
@@ -216,8 +224,8 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 				# echo "$file1"
 				# echo "$file2"	
 					# file1=`echo $file1 | sed -e "s/${1}\///"`
-				file1=${file1#$1/} # path/
-				file2=${file2#$2/} # path/
+				file1=${file1#$p1/} # path/
+				file2=${file2#$p2/} # path/
 				## process with -n <regex>
 				if [[ $n_regular -eq 1 ]]; then
 					if [[ ! "$file1" =~ "$exp_str" ]];then
@@ -229,8 +237,8 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 					# check whether hidden directory
 					continue
 				fi
-				link1=`readlink $1/$file1`
-				link2=`readlink $2/$file2`
+				link1=`readlink $p1/$file1`
+				link2=`readlink $p2/$file2`
 				# deal with link content
 				if [[ "$link1" != "$link2" ]]; then
 					echo "$file1: changed 100%"
@@ -245,17 +253,19 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 					# check whether hidden directory
 					continue
 				fi
+				rel_dir=`echo "$which_dir" | sed 's/\/\+/\//g'`
+				rel_dir=${rel_dir#$p1}
+				rel_dir=${rel_dir%:}
+				rel_dir=${rel_dir:1}
+				file_path="$rel_dir$file1"
 				## process with -n <regex>
 				if [[ $n_regular -eq 1 ]]; then
-					if [[ ! "$file1" =~ "$exp_str" ]];then
+					if [[ ! "$file_path" =~ "$exp_str" ]];then
 						continue
 					fi
 				fi
-				rel_dir=${which_dir#$1}
-				rel_dir=${rel_dir%:}
-				rel_dir=${rel_dir:1}
-				# 	echo "$rel_dir"
-				echo "delete $rel_dir$file1"
+				# echo "$file_path"
+				echo "delete $file_path"
 			elif [[ "$which_dir" = "$2:" ]]; then
 				file2=`echo "$line" | awk '{print $4}'`
 				# deal with unseen file
@@ -263,17 +273,18 @@ if [[ -d $1 ]] && [[ -d $2 ]] && [[ $r_recursive -eq 1 ]]; then
 					# check whether hidden directory
 					continue
 				fi
+				rel_dir=`echo "$which_dir" | sed 's/\/\+/\//g'`
+				rel_dir=${rel_dir#$p2}
+				rel_dir=${rel_dir%:}
+				rel_dir=${rel_dir:1}
+				file_path="$rel_dir$file2"
 				## process with -n <regex>
 				if [[ $n_regular -eq 1 ]]; then
-					if [[ ! "$file2" =~ "$exp_str" ]];then
+					if [[ ! "$file_path" =~ "$exp_str" ]];then
 						continue
 					fi
 				fi
-				rel_dir=${which_dir#$2}
-				rel_dir=${rel_dir%:}
-				rel_dir=${rel_dir:1}
-				# echo "$rel_dir"
-				echo "create $file2"
+				echo "create $file_path"
 			fi
 		fi
 	done <<< "$diff_result"	
